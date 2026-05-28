@@ -27,6 +27,8 @@
     .fare-badge:hover { transform: scale(1.05); cursor: pointer; }
     .fare-edit-btn { opacity: 0; transition: opacity 0.2s ease; }
     .card:hover .fare-edit-btn { opacity: 1; }
+    /* Traffic Bar Animation */
+    .traffic-bar { transition: width 1s ease-in-out; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-950 to-slate-900 text-white min-h-screen">
@@ -48,7 +50,7 @@
       <div class="flex-1 p-8 lg:p-12 flex flex-col justify-center">
         <div class="max-w-md mx-auto w-full">
           <div class="lg:hidden flex items-center gap-3 mb-8">
-            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-3xl font-bold">₹</div>
+            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-3xl font-bold"></div>
             <div><h1 class="text-3xl font-bold">TollEase</h1><p class="text-cyan-400 text-sm">Smart Toll System</p></div>
           </div>
           <div class="text-center mb-10">
@@ -172,12 +174,15 @@
           </div>
         </div>
 
-        <!-- Traffic Section -->
+        <!-- ✅ UPDATED TRAFFIC MONITORING SECTION -->
         <div id="traffic-monitoring" class="hidden">
-          <h2 class="text-2xl font-bold mb-6">🚦 Traffic Monitoring</h2>
-          <div class="bg-slate-800 rounded-3xl p-6 card text-center text-gray-400">
-             <i class="fa-solid fa-chart-line text-6xl mb-4 text-cyan-500"></i>
-             <p>Real-time traffic data integration active.</p>
+          <div class="flex justify-between items-center mb-6">
+             <h2 class="text-2xl font-bold">🚦 Live Traffic Monitoring</h2>
+             <span class="text-xs text-gray-400 bg-slate-800 px-3 py-1 rounded-full">Auto-refresh: 5s</span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="traffic-grid">
+            <!-- Traffic Cards Injected Here by JS -->
           </div>
         </div>
 
@@ -234,6 +239,7 @@
   <script>
     // --- DATA STATE ---
     let appData = { vehicles: [], fares: {} };
+    let trafficInterval;
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', async () => {
@@ -268,6 +274,8 @@
         renderVehicles();
         renderRoutes();
         updateDashboard();
+        // Start traffic simulation if not already running
+        if (!trafficInterval) startTrafficSimulation();
       } catch (err) {
         console.error("Error fetching data:", err);
       }
@@ -323,11 +331,19 @@
       document.getElementById('vehicle-count').textContent = appData.vehicles.length;
     }
 
+    function getVehicleCountPerRoute() {
+      const counts = {};
+      appData.vehicles.forEach(v => {
+        const route = v.route || 'Not Assigned';
+        counts[route] = (counts[route] || 0) + 1;
+      });
+      return counts;
+    }
+
     function renderRoutes() {
       const grid = document.getElementById('routes-grid');
       grid.innerHTML = '';
       
-      // UPDATED ROUTES LIST
       const routes = [
         { id: 'route-1', name: 'NH 275 → BM Expressway', dist: '118 km', icon: 'fa-road', color: 'cyan' },
         { id: 'route-2', name: 'NICE Road → NICE Road', dist: '41 km', icon: 'fa-ring', color: 'emerald' },
@@ -336,8 +352,12 @@
         { id: 'route-5', name: 'Bengaluru–Chennai Expressway → BC Expressway', dist: '262 km', icon: 'fa-highway', color: 'blue' }
       ];
 
+      const vehicleCounts = getVehicleCountPerRoute();
+
       routes.forEach(r => {
         const fare = appData.fares[r.id] || 0;
+        const vehicleCount = vehicleCounts[r.name] || 0;
+
         const div = document.createElement('div');
         div.className = 'bg-slate-800 rounded-3xl p-6 card relative group';
         div.innerHTML = `
@@ -345,6 +365,12 @@
           <div class="section-header bg-gradient-to-br from-${r.color}-500/20 to-blue-500/20 mb-4"><i class="fa-solid ${r.icon} text-${r.color}-400"></i></div>
           <h3 class="text-xl font-semibold">${r.name}</h3>
           <p class="text-cyan-400 text-sm mt-2">${r.dist}</p>
+          
+          <div class="mt-3 flex items-center gap-2">
+            <i class="fa-solid fa-car-side text-gray-400"></i>
+            <span class="text-sm text-gray-300">${vehicleCount} vehicle${vehicleCount !== 1 ? 's' : ''} on route</span>
+          </div>
+
           <div class="mt-4 flex items-center justify-between">
             <div class="flex items-center gap-2 text-emerald-400 text-sm"><i class="fa-solid fa-check-circle"></i> Active</div>
             <span class="fare-badge px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold rounded-xl text-lg">₹${fare}</span>
@@ -356,6 +382,126 @@
 
     function updateDashboard() {
       document.getElementById('dash-total-vehicles').textContent = appData.vehicles.length;
+    }
+
+    // --- TRAFFIC MONITORING LOGIC ---
+    const trafficLocations = [
+      { name: 'Silk Board Junction', baseLoad: 85 },
+      { name: 'Electronic City Flyover', baseLoad: 70 },
+      { name: 'Hosur Road (Hebbal)', baseLoad: 60 },
+      { name: 'Outer Ring Road (Marathahalli)', baseLoad: 75 },
+      { name: 'Nice Road (Anjanapura)', baseLoad: 40 },
+      { name: 'Airport Road (Devanahalli)', baseLoad: 50 }
+    ];
+
+    function startTrafficSimulation() {
+      renderTrafficCards(); // Initial render
+      
+      // Update every 5 seconds
+      trafficInterval = setInterval(() => {
+        updateTrafficData();
+      }, 5000);
+    }
+
+    function renderTrafficCards() {
+      const grid = document.getElementById('traffic-grid');
+      grid.innerHTML = '';
+
+      trafficLocations.forEach((loc, index) => {
+        // Generate random load around baseLoad +/- 10%
+        let load = Math.floor(Math.random() * 20) + (loc.baseLoad - 10);
+        if(load > 100) load = 100;
+        if(load < 0) load = 0;
+
+        // Determine Color & Status
+        let colorClass, statusText, iconClass;
+        if (load < 50) {
+          colorClass = 'from-emerald-400 to-cyan-500';
+          statusText = 'Clear Flow';
+          iconClass = 'fa-check text-emerald-400';
+        } else if (load < 80) {
+          colorClass = 'from-yellow-400 to-orange-500';
+          statusText = 'Moderate Traffic';
+          iconClass = 'fa-circle-half-stroke text-yellow-400';
+        } else {
+          colorClass = 'from-orange-500 to-red-600';
+          statusText = 'High Congestion';
+          iconClass = 'fa-triangle-exclamation text-red-500';
+        }
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-800 rounded-3xl p-6 card';
+        card.id = `traffic-card-${index}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-200 font-semibold flex items-center gap-2">
+              <i class="fa-solid fa-location-dot text-cyan-400"></i> ${loc.name}
+            </h3>
+            <span class="px-3 py-1 bg-slate-700 rounded-full text-sm font-bold load-badge">${load}%</span>
+          </div>
+          
+          <div class="flex items-end gap-2 mb-2">
+             <p class="text-5xl font-bold load-text">${load}%</p>
+             <span class="text-sm mb-2 status-text text-gray-400">${statusText}</span>
+          </div>
+
+          <div class="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+            <div class="h-full traffic-bar bg-gradient-to-r ${colorClass}" style="width: ${load}%"></div>
+          </div>
+          
+          <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
+             <i class="fa-solid ${iconClass}"></i> Last updated: Just now
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function updateTrafficData() {
+      const cards = document.querySelectorAll('[id^="traffic-card-"]');
+      
+      cards.forEach((card, index) => {
+        // Simulate slight change in traffic
+        let currentLoad = parseInt(card.querySelector('.load-text').innerText);
+        let change = Math.floor(Math.random() * 10) - 5; // -5 to +5
+        let newLoad = currentLoad + change;
+        
+        if (newLoad > 100) newLoad = 100;
+        if (newLoad < 0) newLoad = 0;
+
+        // Update UI
+        card.querySelector('.load-text').innerText = `${newLoad}%`;
+        card.querySelector('.load-badge').innerText = `${newLoad}%`;
+        card.querySelector('.traffic-bar').style.width = `${newLoad}%`;
+
+        // Update Color/Status based on new load
+        let colorClass, statusText, iconClass;
+        if (newLoad < 50) {
+          colorClass = 'from-emerald-400 to-cyan-500';
+          statusText = 'Clear Flow';
+          iconClass = 'fa-check text-emerald-400';
+          card.querySelector('.status-text').className = 'text-sm mb-2 status-text text-emerald-400';
+        } else if (newLoad < 80) {
+          colorClass = 'from-yellow-400 to-orange-500';
+          statusText = 'Moderate Traffic';
+          iconClass = 'fa-circle-half-stroke text-yellow-400';
+          card.querySelector('.status-text').className = 'text-sm mb-2 status-text text-yellow-400';
+        } else {
+          colorClass = 'from-orange-500 to-red-600';
+          statusText = 'High Congestion';
+          iconClass = 'fa-triangle-exclamation text-red-500';
+          card.querySelector('.status-text').className = 'text-sm mb-2 status-text text-red-400';
+        }
+        
+        // Update bar gradient
+        const bar = card.querySelector('.traffic-bar');
+        bar.className = `h-full traffic-bar bg-gradient-to-r ${colorClass}`;
+        
+        // Update icon
+        const iconEl = card.querySelector('.fa-solid');
+        iconEl.className = `fa-solid ${iconClass}`;
+        iconEl.nextElementSibling.innerText = `Last updated: Just now`;
+      });
     }
 
     // --- UI LOGIC ---
