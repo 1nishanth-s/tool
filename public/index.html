@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TollEase - Smart Toll Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script>
+    tailwind.config = { content: [] }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .card { transition: all 0.3s ease; }
+    .card:hover { transform: translateY(-8px); }
+    .nav-active { background-color: rgb(34 211 238); color: black; font-weight: 600; }
+    .section-header { height: 120px; border-radius: 20px 20px 0 0; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+    .vehicle-row { transition: all 0.2s ease; }
+    .vehicle-row:hover { background-color: rgba(56, 189, 248, 0.1); }
+    .btn-add { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); } }
+    @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    .login-input { transition: all 0.2s ease; }
+    .login-input:focus { transform: scale(1.02); }
+    .fare-badge { transition: all 0.2s ease; }
+    .fare-badge:hover { transform: scale(1.05); cursor: pointer; }
+    .fare-edit-btn { opacity: 0; transition: opacity 0.2s ease; }
+    .card:hover .fare-edit-btn { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 to-slate-900 text-white min-h-screen">
+
+  <!-- Login Page -->
+  <div id="login-page" class="min-h-screen flex items-center justify-center p-6">
+    <div class="login-container w-full max-w-5xl flex rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900">
+      <div class="hidden lg:flex w-5/12 bg-gradient-to-br from-cyan-600 to-blue-700 flex-col justify-center items-center p-12 text-center relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+          <i class="fa-solid fa-road text-[200px] absolute top-10 left-10"></i>
+          <i class="fa-solid fa-car text-[150px] absolute bottom-20 right-10"></i>
+        </div>
+        <div class="relative z-10">
+          <div class="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center text-6xl font-bold mx-auto mb-6 border border-white/30">₹</div>
+          <h2 class="text-4xl font-bold leading-tight text-white mb-4">Welcome to<br><span class="text-cyan-200">TollEase</span></h2>
+          <p class="text-cyan-100 text-lg">Intelligent Highway Toll Management System</p>
+        </div>
+      </div>
+      <div class="flex-1 p-8 lg:p-12 flex flex-col justify-center">
+        <div class="max-w-md mx-auto w-full">
+          <div class="lg:hidden flex items-center gap-3 mb-8">
+            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-3xl font-bold">₹</div>
+            <div><h1 class="text-3xl font-bold">TollEase</h1><p class="text-cyan-400 text-sm">Smart Toll System</p></div>
+          </div>
+          <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold mb-2">Sign In</h2>
+            <p class="text-gray-400">Access your toll management dashboard</p>
+          </div>
+          <form id="login-form" class="space-y-6">
+            <div>
+              <label class="block text-sm text-gray-400 mb-3 font-medium">Username / Email</label>
+              <div class="relative">
+                <i class="fa-solid fa-user absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="username" value="admin@toll.ease" class="login-input w-full pl-14 pr-5 py-4 bg-slate-800 border border-slate-600 rounded-2xl focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 text-lg">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-3 font-medium">Password</label>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="password" id="password" value="admin123" class="login-input w-full pl-14 pr-12 py-4 bg-slate-800 border border-slate-600 rounded-2xl focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 text-lg">
+                <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cyan-400"><i class="fa-solid fa-eye" id="toggle-icon"></i></button>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-5 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold text-xl rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-cyan-500/25">
+              <i class="fa-solid fa-right-to-bracket mr-2"></i> Login to Dashboard
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application -->
+  <div id="main-app" class="hidden flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-72 bg-slate-900 border-r border-slate-700 flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-cyan-500 to-blue-600">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-white rounded-3xl flex items-center justify-center text-4xl font-bold text-cyan-600">₹</div>
+          <div><h1 class="text-3xl font-bold">TollEase</h1><p class="text-xs text-cyan-100">Bengaluru Smart Toll</p></div>
+        </div>
+      </div>
+      <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        <a onclick="showSection('dashboard')" class="nav-item flex items-center gap-3 px-5 py-4 rounded-3xl cursor-pointer nav-active" id="nav-dashboard"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a onclick="showSection('vehicles')" class="nav-item flex items-center gap-3 px-5 py-4 rounded-3xl hover:bg-slate-800 cursor-pointer" id="nav-vehicles"><i class="fa-solid fa-car"></i> Vehicles</a>
+        <a onclick="showSection('routes')" class="nav-item flex items-center gap-3 px-5 py-4 rounded-3xl hover:bg-slate-800 cursor-pointer" id="nav-routes"><i class="fa-solid fa-road"></i> Routes</a>
+        <a onclick="showSection('traffic-monitoring')" class="nav-item flex items-center gap-3 px-5 py-4 rounded-3xl hover:bg-slate-800 cursor-pointer" id="nav-traffic"><i class="fa-solid fa-traffic-light"></i> Traffic Monitoring</a>
+      </nav>
+      <div class="p-4 border-t border-slate-700">
+        <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-2xl mb-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center font-bold">A</div>
+          <div class="flex-1 min-w-0"><p class="font-medium truncate">Admin User</p><p class="text-xs text-gray-400 truncate">admin@toll.ease</p></div>
+        </div>
+        <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500/20 transition-colors font-medium"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+      <header class="bg-slate-900 border-b border-slate-700 px-8 py-6 flex justify-between items-center">
+        <h2 id="page-title" class="text-3xl font-bold">Dashboard</h2>
+        <div class="flex items-center gap-4">
+          <span class="text-emerald-400 text-sm font-medium flex items-center gap-2"><span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> LIVE</span>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-auto p-8" id="content-area">
+        
+        <!-- Dashboard -->
+        <div id="dashboard">
+           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-800 rounded-3xl p-6 card">
+              <div class="flex items-center gap-3"><i class="fa-solid fa-car text-cyan-400 text-2xl"></i><h3 class="text-cyan-400">Total Vehicles Today</h3></div>
+              <p class="text-5xl font-bold mt-4" id="dash-total-vehicles">0</p>
+            </div>
+            <div class="bg-slate-800 rounded-3xl p-6 card">
+              <div class="flex items-center gap-3"><i class="fa-solid fa-clock text-orange-400 text-2xl"></i><h3 class="text-orange-400">Avg Toll Time</h3></div>
+              <p class="text-5xl font-bold mt-4">47s</p>
+            </div>
+            <div class="bg-slate-800 rounded-3xl p-6 card">
+              <div class="flex items-center gap-3"><i class="fa-solid fa-indian-rupee-sign text-emerald-400 text-2xl"></i><h3 class="text-emerald-400">Revenue Today</h3></div>
+              <p class="text-5xl font-bold mt-4">₹8.4L</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicles Section -->
+        <div id="vehicles" class="hidden">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Registered Vehicles</h2>
+            <button onclick="openAddVehicleModal()" class="btn-add px-6 py-3 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold rounded-2xl hover:brightness-110 transition-all flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i> Add Vehicle
+            </button>
+          </div>
+          <div class="bg-slate-800 rounded-3xl overflow-hidden card">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-slate-700/50">
+                  <tr>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">ID</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Plate</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Type</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Route</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">FASTag</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Status</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="vehicle-list" class="divide-y divide-slate-700">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Routes Section -->
+        <div id="routes" class="hidden">
+          <h2 class="text-2xl font-bold mb-6">Major Toll Routes</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="routes-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Traffic Section -->
+        <div id="traffic-monitoring" class="hidden">
+          <h2 class="text-2xl font-bold mb-6">🚦 Traffic Monitoring</h2>
+          <div class="bg-slate-800 rounded-3xl p-6 card text-center text-gray-400">
+             <i class="fa-solid fa-chart-line text-6xl mb-4 text-cyan-500"></i>
+             <p>Real-time traffic data integration active.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="fare-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-3xl p-8 max-w-md w-full border border-slate-600 shadow-2xl">
+      <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold">Edit Toll Fare</h3><button onclick="closeFareModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button></div>
+      <form id="fare-form" class="space-y-5">
+        <input type="hidden" id="fare-id">
+        <div><label class="block text-sm text-gray-400 mb-2 font-medium">Route / Plaza</label><p id="fare-location" class="px-5 py-3 bg-slate-700 rounded-2xl font-medium text-lg"></p></div>
+        <div><label class="block text-sm text-gray-400 mb-2 font-medium">New Fare (₹)</label><input type="number" id="fare-new" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl text-2xl font-bold" required></div>
+        <div class="flex gap-4 pt-4">
+          <button type="button" onclick="closeFareModal()" class="flex-1 py-4 bg-slate-700 text-white font-bold rounded-2xl">Cancel</button>
+          <button type="submit" class="flex-1 py-4 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold rounded-2xl">Update Fare</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="add-vehicle-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-800 rounded-3xl p-8 max-w-lg w-full border border-slate-600 shadow-2xl">
+      <div class="flex justify-between items-center mb-6"><h3 class="text-2xl font-bold">Add New Vehicle</h3><button onclick="closeAddVehicleModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button></div>
+      <form id="add-vehicle-form" class="space-y-5">
+        <div><label class="block text-sm text-gray-400 mb-2 font-medium">License Plate *</label><input type="text" id="new-plate" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl font-mono" required></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-sm text-gray-400 mb-2 font-medium">Type *</label><select id="new-type" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl" required><option value="Car">Car</option><option value="Truck">Truck</option><option value="Bus">Bus</option></select></div>
+          <div><label class="block text-sm text-gray-400 mb-2 font-medium">Status</label><select id="new-status" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl"><option value="Active">Active</option><option value="Pending">Pending</option></select></div>
+        </div>
+        <div><label class="block text-sm text-gray-400 mb-2 font-medium">Current Route</label><select id="new-route" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl">
+            <option value="Not Assigned">Not Assigned</option>
+            <option value="NH 275 → BM Expressway">NH 275 → BM Expressway</option>
+            <option value="NICE Road → NICE Road">NICE Road → NICE Road</option>
+            <option value="Electronic City Elevated Expressway → ECE Expressway">Electronic City Elevated Expressway → ECE Expressway</option>
+            <option value="Satellite Town Ring Road → STRR">Satellite Town Ring Road → STRR</option>
+            <option value="Bengaluru–Chennai Expressway → BC Expressway">Bengaluru–Chennai Expressway → BC Expressway</option>
+        </select></div>
+        <div><label class="block text-sm text-gray-400 mb-2 font-medium">FASTag ID</label><input type="text" id="new-fastag" class="w-full px-5 py-4 bg-slate-700 border border-slate-600 rounded-2xl font-mono"></div>
+        <div class="flex gap-4 pt-4">
+          <button type="button" onclick="closeAddVehicleModal()" class="flex-1 py-4 bg-slate-700 text-white font-bold rounded-2xl">Cancel</button>
+          <button type="submit" class="flex-1 py-4 bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold rounded-2xl">Add Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 right-6 bg-emerald-500 text-black px-6 py-4 rounded-2xl font-medium shadow-lg z-50 animate-slide-up">
+    <i class="fa-solid fa-check-circle mr-2"></i><span id="toast-message">Action completed successfully</span>
+  </div>
+
+  <script>
+    // --- DATA STATE ---
+    let appData = { vehicles: [], fares: {} };
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      const savedUser = localStorage.getItem('tollEaseUser');
+      if (savedUser) {
+        document.getElementById('login-page').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        await fetchData();
+        showSection('dashboard');
+      }
+      
+      document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if(u && p) {
+          localStorage.setItem('tollEaseUser', JSON.stringify({ username: u }));
+          document.getElementById('login-page').classList.add('hidden');
+          document.getElementById('main-app').classList.remove('hidden');
+          await fetchData();
+          showSection('dashboard');
+          showToast(`Welcome back, ${u.split('@')[0]}!`);
+        }
+      });
+    });
+
+    // --- API CALLS ---
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/data');
+        appData = await res.json();
+        renderVehicles();
+        renderRoutes();
+        updateDashboard();
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    async function addVehicleToServer(vehicle) {
+      try {
+        const res = await fetch('/api/vehicles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(vehicle)
+        });
+        if(res.ok) await fetchData();
+      } catch (err) { console.error(err); }
+    }
+
+    async function deleteVehicleFromServer(id) {
+      try {
+        await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
+        await fetchData();
+      } catch (err) { console.error(err); }
+    }
+
+    async function updateFareOnServer(id, amount) {
+      try {
+        await fetch('/api/fares', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, amount })
+        });
+        await fetchData();
+      } catch (err) { console.error(err); }
+    }
+
+    // --- RENDERING ---
+    function renderVehicles() {
+      const tbody = document.getElementById('vehicle-list');
+      tbody.innerHTML = '';
+      appData.vehicles.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.className = 'vehicle-row';
+        tr.innerHTML = `
+          <td class="px-6 py-4">${v.vid}</td>
+          <td class="px-6 py-4 font-mono">${v.plate}</td>
+          <td class="px-6 py-4"><span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">${v.type}</span></td>
+          <td class="px-6 py-4 text-gray-300">${v.route}</td>
+          <td class="px-6 py-4 font-mono text-sm">${v.fastag}</td>
+          <td class="px-6 py-4"><span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm">${v.status}</span></td>
+          <td class="px-6 py-4"><button onclick="deleteVehicle('${v.id}')" class="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 text-sm"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('vehicle-count').textContent = appData.vehicles.length;
+    }
+
+    function renderRoutes() {
+      const grid = document.getElementById('routes-grid');
+      grid.innerHTML = '';
+      
+      // UPDATED ROUTES LIST
+      const routes = [
+        { id: 'route-1', name: 'NH 275 → BM Expressway', dist: '118 km', icon: 'fa-road', color: 'cyan' },
+        { id: 'route-2', name: 'NICE Road → NICE Road', dist: '41 km', icon: 'fa-ring', color: 'emerald' },
+        { id: 'route-3', name: 'Electronic City Elevated Expressway → ECE Expressway', dist: '10.2 km', icon: 'fa-bridge', color: 'purple' },
+        { id: 'route-4', name: 'Satellite Town Ring Road → STRR', dist: '136 km', icon: 'fa-map-location-dot', color: 'orange' },
+        { id: 'route-5', name: 'Bengaluru–Chennai Expressway → BC Expressway', dist: '262 km', icon: 'fa-highway', color: 'blue' }
+      ];
+
+      routes.forEach(r => {
+        const fare = appData.fares[r.id] || 0;
+        const div = document.createElement('div');
+        div.className = 'bg-slate-800 rounded-3xl p-6 card relative group';
+        div.innerHTML = `
+          <button onclick="openFareModal('${r.id}', ${fare}, '${r.name}')" class="fare-edit-btn absolute top-4 right-4 p-2 bg-slate-700 hover:bg-cyan-500 rounded-xl transition-colors"><i class="fa-solid fa-pen text-cyan-400 hover:text-black"></i></button>
+          <div class="section-header bg-gradient-to-br from-${r.color}-500/20 to-blue-500/20 mb-4"><i class="fa-solid ${r.icon} text-${r.color}-400"></i></div>
+          <h3 class="text-xl font-semibold">${r.name}</h3>
+          <p class="text-cyan-400 text-sm mt-2">${r.dist}</p>
+          <div class="mt-4 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-400 text-sm"><i class="fa-solid fa-check-circle"></i> Active</div>
+            <span class="fare-badge px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold rounded-xl text-lg">₹${fare}</span>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function updateDashboard() {
+      document.getElementById('dash-total-vehicles').textContent = appData.vehicles.length;
+    }
+
+    // --- UI LOGIC ---
+    function showSection(section) {
+      document.querySelectorAll('#content-area > div').forEach(div => div.classList.add('hidden'));
+      document.getElementById(section).classList.remove('hidden');
+      document.getElementById('page-title').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('nav-active'));
+      const navId = section === 'traffic-monitoring' ? 'traffic' : section;
+      document.getElementById(`nav-${navId}`).classList.add('nav-active');
+    }
+
+    function logout() {
+      localStorage.removeItem('tollEaseUser');
+      location.reload();
+    }
+
+    function togglePassword() {
+      const pwd = document.getElementById('password');
+      const icon = document.getElementById('toggle-icon');
+      if (pwd.type === 'password') { pwd.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
+      else { pwd.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
+    }
+
+    // Vehicle Modal Logic
+    function openAddVehicleModal() { document.getElementById('add-vehicle-modal').classList.remove('hidden'); }
+    function closeAddVehicleModal() { document.getElementById('add-vehicle-modal').classList.add('hidden'); document.getElementById('add-vehicle-form').reset(); }
+    
+    document.getElementById('add-vehicle-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const vehicle = {
+        plate: document.getElementById('new-plate').value.toUpperCase(),
+        type: document.getElementById('new-type').value,
+        status: document.getElementById('new-status').value,
+        route: document.getElementById('new-route').value,
+        fastag: document.getElementById('new-fastag').value || 'N/A',
+        time: new Date().toLocaleTimeString()
+      };
+      addVehicleToServer(vehicle);
+      closeAddVehicleModal();
+      showToast('Vehicle added successfully');
+    });
+
+    window.deleteVehicle = (id) => {
+      if(confirm('Remove this vehicle?')) deleteVehicleFromServer(id);
+    };
+
+    // Fare Modal Logic
+    let currentFareId = null;
+    window.openFareModal = (id, amount, name) => {
+      currentFareId = id;
+      document.getElementById('fare-id').value = id;
+      document.getElementById('fare-location').textContent = name;
+      document.getElementById('fare-new').value = amount;
+      document.getElementById('fare-modal').classList.remove('hidden');
+    };
+    window.closeFareModal = () => { document.getElementById('fare-modal').classList.add('hidden'); };
+    
+    document.getElementById('fare-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newAmount = parseInt(document.getElementById('fare-new').value);
+      updateFareOnServer(currentFareId, newAmount);
+      closeFareModal();
+      showToast('Fare updated');
+    });
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3000);
+    }
+  </script>
+</body>
+</html>
